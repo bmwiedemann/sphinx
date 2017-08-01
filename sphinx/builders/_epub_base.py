@@ -12,7 +12,7 @@
 import os
 import re
 from os import path
-from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile
+from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 from datetime import datetime
 from collections import namedtuple
 
@@ -702,7 +702,10 @@ class EpubBuilder(StandaloneHTMLBuilder):
         """
         logger.info('writing %s file...', outname)
         epub_filename = path.join(outdir, outname)
+        timeint = 1501618712 # FIXME: use buildtime()
         with ZipFile(epub_filename, 'w', ZIP_DEFLATED) as epub:  # type: ignore
             epub.write(path.join(outdir, 'mimetype'), 'mimetype', ZIP_STORED)  # type: ignore
             for filename in [u'META-INF/container.xml', u'content.opf', u'toc.ncx'] + self.files:
-                epub.write(path.join(outdir, filename), filename, ZIP_DEFLATED)  # type: ignore
+                file_info = ZipInfo(path.join(outdir, filename), time.gmtime(timeint))
+                file_info.external_attr = 0x81a40000 # set UNIX 644 permission
+                epub.write(file_info, filename, ZIP_DEFLATED)  # type: ignore
